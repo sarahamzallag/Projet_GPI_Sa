@@ -30,9 +30,9 @@ def extraire_donnees(pdb_name):
                     chaine = line[21]            # Identification de la chaine (A, B)
                     position = int(line[22:26].strip()) # Position du nucléotide
 
-                    x = line[30:38].strip()     # Coordonnée X
-                    y = line[38:46].strip()
-                    z = line[46:55].strip()
+                    x = float(line[30:38].strip())     # Coordonnée X en decimal
+                    y = float(line[38:46].strip())
+                    z = float(line[46:55].strip())
 
                     atome_infos = {
                         'base': base,
@@ -102,3 +102,22 @@ for atome in mes_atomes:  # On parcourt tous les atomes
 print(f"Tri terminé : {len(liste_donneurs)} donneurs et {len(liste_accepteurs)} accepteurs trouvés.")     
 for d in liste_donneurs[:5]:
     print(d)   
+
+
+
+# 4.Calcul des distances < 3 Angströms
+liaisons_trouvees = 0
+
+for d in liste_donneurs:
+    for a in liste_accepteurs:
+        x1, y1, z1 = d['coord'] # On récupère les coordonnées x,y et z
+        x2, y2, z2 = a['coord']
+        
+        # Formule de la distance 3D
+        distance = ((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2) ** 0.5
+        
+        # Condition : distance max de 3 Å + ne pas faire de liaison avec la MEME base 
+        if distance <= 3.0  and d['position'] != a['position']:
+            liaisons_trouvees += 1
+
+            print(f"Liaison {liaisons_trouvees} : {d['base']}{d['position']}({d['name']}) <-> {a['base']}{a['position']}({a['name']}) | Dist: {distance:.2f} Å")
