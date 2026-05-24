@@ -73,3 +73,32 @@ chaine_finale = ''.join(sequence[i] for i in sorted(sequence)) # reconstruction 
 
 print("\nSequence reconstruite :")
 print(chaine_finale)
+
+
+
+# 3.Classification des Donneurs et Accepteurs
+donneurs = {
+    'A': ['N6'], 'C': ['N4'], 'G': ['N1', 'N2'], 'U': ['N3'], 'T': ['N3']
+}
+
+accepteurs = {
+    'A': ['N1', 'N3', 'N7'], 'C': ['O2', 'N3'], 'G': ['O6', 'N3', 'N7'], 'U': ['O2', 'O4'], 'T': ['O2', 'O4']
+}
+
+liste_donneurs = []
+liste_accepteurs = []
+
+for atome in mes_atomes:  # On parcourt tous les atomes
+    base = atome['base']  # On récupère le nom de la base (ex: 'A')
+    name = atome['name']  # On récupère le nom de l'atome (ex: 'N6')
+
+
+# On vérifie si notre atome actuel ('name') est présent dans la liste 'Donneur' 'Accepteur'
+    if name in donneurs[base]:
+        liste_donneurs.append(atome)
+    if name in accepteurs[base]:
+        liste_accepteurs.append(atome)
+
+print(f"Tri terminé : {len(liste_donneurs)} donneurs et {len(liste_accepteurs)} accepteurs trouvés.")     
+for d in liste_donneurs[:5]:
+    print(d)   
