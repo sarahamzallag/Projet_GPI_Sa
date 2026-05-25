@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# script executable 
-# le rendre executable : chmod +x script_executable.py ds terminal sans ecrire python3 devant
-# on veut pouvoir faire : ./script_executable.py 8D28.pdb
 
 import sys      # contient une liste
 import RNA.utils as utils
@@ -16,6 +13,18 @@ if len(sys.argv) != 2:
 pdb_name = sys.argv[1]
 
 
+class Atome: # Classe pour encapsuler un atome
+    def __init__(self, base, position, chaine, name, coord): # Constructeur d'objet
+        self.base = base # Stocke la base (A, C, G, U)
+        self.position = position # Stocke la position numérique
+        self.chaine = chaine # Stocke l'identifiant de la chaîne
+        self.name = name # Stocke le nom de l'atome (N6, O2, etc.)
+        self.coord = coord # Stocke le tuple de coordonnées (x, y, z)
+
+
+
+
+# 1.Extraction des données
 def extraire_donnees(pdb_name):
     resultat = [] # Liste vide pour stocker les résultats 
 
@@ -34,14 +43,8 @@ def extraire_donnees(pdb_name):
                     y = float(line[38:46].strip())
                     z = float(line[46:55].strip())
 
-                    atome_infos = {
-                        'base': base,
-                        'position': position,
-                        'chaine': chaine,
-                        'name': name,       # On rajoute ça pour l'étape 3 d'après !
-                        'coord': (x, y, z)  # On garde les coordonnées au cas où
-                    }
-                    resultat.append(atome_infos) # Correction : on utilise 'resultat'
+                    atome_infos = Atome(base, position, chaine, name, (x, y, z)) # Création de l'objet 
+                    resultat.append(atome_infos) # Ajoute l'objet directement dans la liste de résultats
 
                 else:    
                     line = file.readline()   # On avance d'une ligne
@@ -52,21 +55,19 @@ def extraire_donnees(pdb_name):
     return resultat    
 
 
-
-
-# 1.Visualisation
+# 2.Visualisation
 mes_atomes = extraire_donnees(pdb_name) # On appelle la fonction et on stocke ce qu'elle renvoie dans 'mes_atomes'
 for atome in mes_atomes[:5]: # On affiche seulement les 5 premiers 
-    print(atome)
+    print(f"{{'base': '{atome.base}', 'position': {atome.position}, 'chaine': '{atome.chaine}', 'name': '{atome.name}', 'coord': {atome.coord}}}") # Affiche les variables de l'objet de façon lisible
 
 
 
-# 2.Reconstruction de la sequence
+# 3.Reconstruction de la sequence
 sequence = {}
 for atome in mes_atomes: # on parcourt tous les atomes
 
-    position = atome['position']
-    base = atome['base']
+    position = atome.position # Changement en POO : .position au lieu de ['position']
+    base = atome.base # Changement en POO : .base au lieu de ['base']
     sequence[position] = base # On ne garde qu'une seule base par position
 
 chaine_finale = ''.join(sequence[i] for i in sorted(sequence)) # reconstruction dans l'ordre des positions
@@ -76,7 +77,7 @@ print(chaine_finale)
 
 
 
-# 3.Classification des Donneurs et Accepteurs
+# 4.Classification des Donneurs et Accepteurs
 donneurs = {
     'A': ['N6'], 'C': ['N4'], 'G': ['N1', 'N2'], 'U': ['N3'], 'T': ['N3']
 }
@@ -89,8 +90,8 @@ liste_donneurs = []
 liste_accepteurs = []
 
 for atome in mes_atomes:  # On parcourt tous les atomes
-    base = atome['base']  # On récupère le nom de la base (ex: 'A')
-    name = atome['name']  # On récupère le nom de l'atome (ex: 'N6')
+    base = atome.base  
+    name = atome.name 
 
 
 # On vérifie si notre atome actuel ('name') est présent dans la liste 'Donneur' 'Accepteur'
@@ -101,23 +102,74 @@ for atome in mes_atomes:  # On parcourt tous les atomes
 
 print(f"Tri terminé : {len(liste_donneurs)} donneurs et {len(liste_accepteurs)} accepteurs trouvés.")     
 for d in liste_donneurs[:5]:
-    print(d)   
+    print(f"{{'base': '{d.base}', 'position': {d.position}, 'name': '{d.name}', 'coord': {d.coord}}}") # Affiche le donneur au format dictionnaire pour le visuel
 
 
 
-# 4.Calcul des distances < 3 Angströms
+# 5.Calcul des distances < 3 Angströms
 liaisons_trouvees = 0
+
+paires = set() # enlève automatiquement les doublons
 
 for d in liste_donneurs:
     for a in liste_accepteurs:
-        x1, y1, z1 = d['coord'] # On récupère les coordonnées x,y et z
-        x2, y2, z2 = a['coord']
+        x1, y1, z1 = d.coord # Changement en POO : .coord au lieu de ['coord']
+        x2, y2, z2 = a.coord # Changement en POO : .coord au lieu de ['coord']
         
         # Formule de la distance 3D
         distance = ((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2) ** 0.5
         
-        # Condition : distance max de 3 Å + ne pas faire de liaison avec la MEME base 
-        if distance <= 3.0  and d['position'] != a['position']:
+        # Condition : distance max de 3 Å + ne pas faire de liaison avec la MEME base
+        if distance <= 3.0  and d.position != a.position : # Changement en POO : .position au lieu de ['position']
             liaisons_trouvees += 1
 
-            print(f"Liaison {liaisons_trouvees} : {d['base']}{d['position']}({d['name']}) <-> {a['base']}{a['position']}({a['name']}) | Dist: {distance:.2f} Å")
+            i = int(d.position) # Positions des nucléotides en notation objet
+            j = int(a.position) # Positions des nucléotides en notation objet
+            paires.add((min(i, j), max(i, j))) # On stocke la paire sans doublons
+
+            print(
+                f"Liaison {liaisons_trouvees} : "
+                f"{d.base}{d.position}({d.name}) " 
+                f"<-> "
+                f"{a.base}{a.position}({a.name}) " 
+                f"| Dist: {distance:.2f} Å"
+            )
+
+
+# 6. Construction du dot-bracket
+
+position_depart = min(paires)[0] if paires else 1  # première position de la séquence
+
+taille = len(chaine_finale)  # longueur totale de l'ARN
+structure = ['.'] * taille   # au départ tous les nucléotides sont non appariés
+
+deja_apparies = set()  # évite qu'une base ait plusieurs partenaires
+
+# On parcourt les paires trouvées à l'étape 4
+for i, j in sorted(paires):
+
+    idx_i = i - position_depart  # conversion position biologique -> index Python
+    idx_j = j - position_depart
+
+    lettre1 = chaine_finale[idx_i]  # base du nucléotide i
+    lettre2 = chaine_finale[idx_j]  # base du nucléotide j
+
+    combine = lettre1 + lettre2  # ex : AU, GC, GU
+
+    # On garde seulement les paires autorisées
+    if combine in ['AU', 'CG', 'GC', 'UG', 'GU']:
+
+        # Vérifie que les nucléotides ne sont pas déjà appariés
+        if i not in deja_apparies and j not in deja_apparies:
+
+            structure[idx_i] = '('  # parenthèse ouvrante
+            structure[idx_j] = ')'  # parenthèse fermante
+
+            deja_apparies.add(i)  # marque i comme apparié
+            deja_apparies.add(j)  # marque j comme apparié
+
+dot_bracket = ''.join(structure)  # transforme la liste en chaîne finale
+
+print("\n--- COMPARAISON ---")
+print("Prof : ((((...((.(((....)))....))...))))")
+print(f"Moi  : {dot_bracket}")
